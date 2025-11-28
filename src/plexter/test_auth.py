@@ -1,4 +1,4 @@
-from .plex_jwt_auth import get_plex_token, plex_headers
+from plex_jwt_auth import get_plex_token, plex_headers
 import httpx
 
 def main():
