@@ -1,0 +1,24 @@
+{% if results and results|length > 0 %}
+  <ul>
+    {% for r in results %}
+      <li>
+        <b>{{ r.title }}</b>
+        {% if r.year %}<small> ({{ r.year }})</small>{% endif %}
+        {% if r.rating_key in selected_keys %}
+          <small> — selected</small>
+        {% else %}
+          <form style="display:inline"
+                hx-post="/select"
+                hx-target="#selected"
+                hx-swap="innerHTML">
+            <input type="hidden" name="key" value="{{ r.rating_key }}">
+            <input type="hidden" name="title" value="{{ r.title }}">
+            <button type="submit">Add</button>
+          </form>
+        {% endif %}
+      </li>
+    {% endfor %}
+  </ul>
+{% else %}
+  <small>No results.</small>
+{% endif %}

@@ -1,0 +1,46 @@
+{% extends "layout.html" %}
+{% block content %}
+
+<h1>Round Robin Playlist Builder</h1>
+<p><small>Select shows -> interleave episodes -> create a Plex playlist</small></p>
+<div class="row">
+  <div class="card">
+    <h3>Search shows</h3>
+    <form hx-post="search" hx-target="#results" hx-swap="innerHTML">
+      <input name="q" placeholder="Search show title..." style="width:100%;"/>
+      <div style="margin-top:10px;">
+        <button type="submit">Search</button>
+      </div>
+    </form>
+    <div id="results" style="margin-top:12px;"></div>
+  </div>
+
+  <div class="card">
+    <h3>Selected</h3>
+    <div id="selected">
+      {% include "_selected.html" %}
+    </div>
+  </div>
+</div>
+
+<div class="card" style="margin-top:16px">
+  <h3>Preview + Create</h3>
+
+  <form hx-post="/preview" hx-target="#preview" hx-swap="innerHTML">
+    <button type="submit">Preview order</button>
+  </form>
+
+  <div id="preview" style="margin-top:12px;"></div>
+
+  <hr style="margin:16px 0;">
+
+  <form hx-post="/create" hx-target="#status" hx-swap="innerHTML">
+    <label>Playlist name:</label><br/>
+    <input name="playlist_name" placeholder="e.g. Sitcom Mix" style="width:100%; margin:8x 0;" required />
+    <button type="submit">Create playlist</button>
+  </form>
+
+  <div id="status" style="margin-top:12px;"></div>
+</div>
+
+{% endblock %}

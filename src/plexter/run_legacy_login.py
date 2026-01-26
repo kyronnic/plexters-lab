@@ -1,5 +1,5 @@
 from plexter.legacy_auth import create_pin, build_auth_url, poll_pin
-from plex_jwt_auth import PLEX_CLIENT_ID
+from plexlib.plex_jwt_auth import PLEX_CLIENT_ID
 
 def main():
     pin_id, pin_code = create_pin()

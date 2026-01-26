@@ -3,7 +3,7 @@ import httpx
 from urllib.parse import urlencode
 import xml.etree.ElementTree as ET
 
-from plexter.plex_jwt_auth import _base_headers
+from plexlib.plex_jwt_auth import _base_headers
 
 
 def create_pin():
