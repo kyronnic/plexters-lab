@@ -7,7 +7,7 @@ from typing import List
 import httpx
 import xml.etree.ElementTree as ET
 
-from plexter.plex_jwt_auth import PLEX_LEGACY_TOKEN, _base_headers
+from plexlib.plex_jwt_auth import PLEX_LEGACY_TOKEN, _base_headers
 
 PLEX_SERVER_URL = os.getenv("PLEX_SERVER_URL")
 

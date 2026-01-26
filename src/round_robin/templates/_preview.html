@@ -1,0 +1,13 @@
+{% if error %}
+  <div class="error">{{ error }}</div>
+{% elif total == 0 %}
+  <div class="error">No episodes found</div>
+<% else %>
+  <div><b>Total episodes:</b> {{ total }}</div>
+  <div style="margin-top:8px;"><b>Preview (first {{ lines|length }}):</b></div>
+  <ol>
+    {% for line in lines %}
+      <li>{{ line }}</li>
+    {% endfor %}
+  </ol>
+{% endif %}
