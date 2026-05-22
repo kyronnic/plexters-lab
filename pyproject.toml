@@ -11,6 +11,13 @@ dependencies = [
     "setuptools>=82.0.1",
 ]
 
+[project.scripts]
+plexter-round-robin = "plexter.playlists.round_robin.cli:main"
+
+[build-system]
+requires = ["setuptools>=82.0.1"]
+build-backend = "setuptools.build_meta"
+
 [dependency-groups]
 dev = [
     "pytest>=9.0.3",

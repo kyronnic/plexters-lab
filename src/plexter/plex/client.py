@@ -1,3 +1,4 @@
+from collections.abc import Sequence
 from typing import Any
 
 import httpx
@@ -36,10 +37,29 @@ class PlexClient:
     def get(self, path: str, params: dict[str, Any] | None = None) -> dict[str, Any]:
         response = self.client.get(path, params=params)
         response.raise_for_status()
+        if not response.content:
+            return {}
+
+        return response.json()
+
+    def post(self, path: str, params: dict[str, Any] | None = None) -> dict[str, Any]:
+        response = self.client.post(path, params=params)
+        response.raise_for_status()
+        if not response.content:
+            return {}
+
         return response.json()
 
     def get_server_identity(self) -> dict[str, Any]:
         return self.get("/identity")
+
+    def get_machine_identifier(self) -> str:
+        identity = self.get_server_identity()
+        machine_identifier = identity.get("MediaContainer", {}).get("machineIdentifier")
+        if not machine_identifier:
+            raise RuntimeError("Could not read Plex machine identifier.")
+
+        return str(machine_identifier)
 
     def get_libraries(self) -> list[dict[str, Any]]:
         data = self.get("/library/sections")
@@ -51,6 +71,33 @@ class PlexClient:
             for library in self.get_libraries()
             if library.get("type") == library_type
         ]
+
+    def get_library_items(self, library_key: str | int) -> list[dict[str, Any]]:
+        data = self.get(f"/library/sections/{library_key}/all")
+        return data.get("MediaContainer", {}).get("Metadata", [])
+
+    def get_shows(self, library_title: str | None = None) -> list[dict[str, Any]]:
+        libraries = self.get_libraries_by_type("show")
+        if library_title:
+            libraries = [
+                library
+                for library in libraries
+                if library.get("title") == library_title
+            ]
+
+        shows: list[dict[str, Any]] = []
+        for library in libraries:
+            library_key = library.get("key")
+            if not library_key:
+                continue
+
+            shows.extend(
+                show
+                for show in self.get_library_items(library_key)
+                if show.get("type") == "show"
+            )
+
+        return shows
 
     def find_library_by_title(self, title: str) -> dict[str, Any] | None:
         target = title.lower().strip()
@@ -138,3 +185,30 @@ class PlexClient:
             episodes.extend(self.get_season_episodes(season_key))
 
         return episodes
+
+    def create_video_playlist(
+        self,
+        title: str,
+        episode_rating_keys: Sequence[str | int],
+    ) -> dict[str, Any]:
+        clean_title = title.strip()
+        if not clean_title:
+            raise ValueError("Playlist title cannot be blank.")
+        if not episode_rating_keys:
+            raise ValueError("At least one episode rating key is required.")
+
+        machine_identifier = self.get_machine_identifier()
+        keys_csv = ",".join(str(rating_key) for rating_key in episode_rating_keys)
+        uri = (
+            f"server://{machine_identifier}/com.plexapp.plugins.library"
+            f"/library/metadata/{keys_csv}"
+        )
+
+        return self.post(
+            "/playlists",
+            params={
+                "type": "video",
+                "title": clean_title,
+                "uri": uri,
+            },
+        )
