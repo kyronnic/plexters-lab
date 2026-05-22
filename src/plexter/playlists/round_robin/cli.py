@@ -5,6 +5,7 @@ from collections.abc import Callable, Sequence
 from typing import Any, Protocol, TextIO
 
 from plexter.db import log_script_run
+from plexter.notifications import notify_failure, notify_success
 from plexter.playlists.round_robin import (
     PlexShowClient,
     RoundRobinPreview,
@@ -24,6 +25,20 @@ class ScriptRunLogger(Protocol):
         status: str,
         message: str | None = None,
         metadata: dict[str, Any] | None = None,
+    ) -> int:
+        pass
+
+
+class RoundRobinNotifier(Protocol):
+    def __call__(
+        self,
+        message: str,
+        metadata: dict[str, Any] | None = None,
+        *,
+        title: str | None = None,
+        description: str | None = None,
+        color: int | None = None,
+        fields: Sequence[dict[str, Any]] | None = None,
     ) -> int:
         pass
 
@@ -94,6 +109,8 @@ def run(
     client_factory: ClientFactory = PlexClient,
     output: TextIO | None = None,
     script_run_logger: ScriptRunLogger = log_script_run,
+    success_notifier: RoundRobinNotifier = notify_success,
+    failure_notifier: RoundRobinNotifier = notify_failure,
 ) -> int:
     parser = build_parser()
     args = parser.parse_args(argv)
@@ -118,12 +135,26 @@ def run(
                 playlist_name=playlist_name,
                 dry_run=dry_run,
             )
+            notify_round_robin_success(
+                success_notifier,
+                preview=preview,
+                playlist_name=playlist_name,
+                dry_run=dry_run,
+                output=stream,
+            )
         except ValueError as exc:
             log_round_robin_failure(
                 script_run_logger,
                 error_message=str(exc),
                 selected_shows=args.shows,
                 playlist_name=playlist_name,
+            )
+            notify_round_robin_failure(
+                failure_notifier,
+                error_message=str(exc),
+                selected_shows=args.shows,
+                playlist_name=playlist_name,
+                output=stream,
             )
             parser.exit(1, f"error: {exc}\n")
         except Exception as exc:
@@ -132,6 +163,13 @@ def run(
                 error_message=str(exc),
                 selected_shows=args.shows,
                 playlist_name=playlist_name,
+            )
+            notify_round_robin_failure(
+                failure_notifier,
+                error_message=str(exc),
+                selected_shows=args.shows,
+                playlist_name=playlist_name,
+                output=stream,
             )
             raise
     finally:
@@ -191,6 +229,73 @@ def log_round_robin_failure(
             "selected_shows": list(selected_shows),
         },
     )
+
+
+def notify_round_robin_success(
+    notifier: RoundRobinNotifier,
+    preview: RoundRobinPreview,
+    playlist_name: str | None,
+    dry_run: bool,
+    output: TextIO | None = None,
+) -> int | None:
+    episode_count = len(preview.episodes)
+    selected_shows = [show.title for show in preview.shows]
+    playlist_label = playlist_name or "dry run"
+    metadata = {
+        "playlist_name": playlist_name,
+        "selected_shows": selected_shows,
+        "episode_count": episode_count,
+        "dry_run": dry_run,
+    }
+
+    try:
+        return notifier(
+            f"Round robin playlist '{playlist_label}' completed with {episode_count} episodes.",
+            metadata=metadata,
+            title="Round Robin Complete",
+            description=playlist_label,
+            color=0x2ECC71,
+            fields=[
+                {"name": "Playlist", "value": playlist_label, "inline": True},
+                {"name": "Episodes", "value": episode_count, "inline": True},
+                {"name": "Dry Run", "value": dry_run, "inline": True},
+                {"name": "Shows", "value": ", ".join(selected_shows) or "None"},
+            ],
+        )
+    except Exception as exc:
+        _print(f"warning: failed to send Discord notification: {exc}", output)
+        return None
+
+
+def notify_round_robin_failure(
+    notifier: RoundRobinNotifier,
+    error_message: str,
+    selected_shows: Sequence[str],
+    playlist_name: str | None,
+    output: TextIO | None = None,
+) -> int | None:
+    playlist_label = playlist_name or "dry run"
+    metadata = {
+        "playlist_name": playlist_name,
+        "selected_shows": list(selected_shows),
+    }
+
+    try:
+        return notifier(
+            error_message,
+            metadata=metadata,
+            title="Round Robin Failed",
+            description=playlist_label,
+            color=0xE74C3C,
+            fields=[
+                {"name": "Playlist", "value": playlist_label, "inline": True},
+                {"name": "Shows", "value": ", ".join(selected_shows) or "None"},
+                {"name": "Error", "value": error_message},
+            ],
+        )
+    except Exception as exc:
+        _print(f"warning: failed to send Discord notification: {exc}", output)
+        return None
 
 
 def print_round_robin_preview(

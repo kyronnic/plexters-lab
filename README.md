@@ -24,6 +24,7 @@ src/
         config.py              # .env-backed application settings
         db.py                  # PostgreSQL connection and script run logging
         notifications.py       # Notification logging and Discord webhook entry point
+        discord_bot/           # Discord slash-command bot skeleton
         plex/
             client.py          # Plex API client
         playlists/
@@ -40,12 +41,15 @@ scripts/
     test_plex_client.py        # Manual Plex client smoke script
 
 tests/
+    test_discord_bot.py        # Unit tests for bot setup
+    test_discord_bot_commands.py # Unit tests for bot command formatting
     test_round_robin.py        # Unit tests for round-robin logic
     test_round_robin_cli.py    # Unit tests for round-robin CLI flow
     test_plex_client.py        # Mocked tests for Plex playlist creation
 
 docs/
     project_state.md           # Development state and notes
+    services.md                # Long-running application service notes
 ```
 
 ## Requirements
@@ -85,6 +89,13 @@ Optional for Discord notifications:
 DISCORD_WEBHOOK_URL=https://discord.com/api/webhooks/...
 ```
 
+Required for the Discord slash-command bot:
+
+```env
+DISCORD_BOT_TOKEN=your_bot_token
+DISCORD_GUILD_ID=your_server_id
+```
+
 Do not hardcode secrets in source files. Classic Plex token authentication is the current working default; do not replace it with JWT authentication.
 
 ## Plex Client
@@ -114,6 +125,24 @@ Known Plex server note: `/library/sections/{id}/search` has returned HTTP 400 on
 Playlist features live under `src/plexter/playlists/`. Round Robin is currently the first concrete playlist feature and has its own package, CLI, compatibility wrapper, and documentation.
 
 See [src/plexter/playlists/README.md](src/plexter/playlists/README.md) for Round Robin usage and implementation details.
+
+## Discord Bot
+
+The Discord bot skeleton lives under `src/plexter/discord_bot/` and uses `discord.py` slash commands with guild-scoped registration for fast testing. It does not enable the message content intent.
+
+Run it from the repository root:
+
+```bash
+uv run python -m plexter.discord_bot
+```
+
+Current commands:
+
+- `/ping`
+- `/libraries`
+- `/search query:<str>`
+
+Service/runtime notes for Atlas Bot live in [docs/services.md](docs/services.md).
 
 ## Development
 

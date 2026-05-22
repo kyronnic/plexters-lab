@@ -11,6 +11,17 @@ ENV_PATH = PROJECT_ROOT / ".env"
 load_dotenv(ENV_PATH)
 
 
+def optional_int_env(name: str) -> int | None:
+    value = os.getenv(name, "").strip()
+    if not value:
+        return None
+
+    try:
+        return int(value)
+    except ValueError:
+        return None
+
+
 @dataclass(frozen=True)
 class Settings:
     postgres_host: str = os.getenv("POSTGRES_HOST", "localhost")
@@ -23,6 +34,8 @@ class Settings:
     plex_token: str = os.getenv("PLEX_TOKEN", "")
 
     discord_webhook_url: str = os.getenv("DISCORD_WEBHOOK_URL", "")
+    discord_bot_token: str = os.getenv("DISCORD_BOT_TOKEN", "")
+    discord_guild_id: int | None = optional_int_env("DISCORD_GUILD_ID")
 
 
 settings = Settings()

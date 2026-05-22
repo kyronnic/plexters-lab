@@ -85,15 +85,46 @@ class FakeScriptRunLogger:
         return len(self.entries)
 
 
+class FakeNotifier:
+    def __init__(self) -> None:
+        self.entries: list[dict] = []
+
+    def __call__(
+        self,
+        message: str,
+        metadata: dict | None = None,
+        *,
+        title: str | None = None,
+        description: str | None = None,
+        color: int | None = None,
+        fields: list[dict] | None = None,
+    ) -> int:
+        self.entries.append(
+            {
+                "message": message,
+                "metadata": metadata,
+                "title": title,
+                "description": description,
+                "color": color,
+                "fields": fields,
+            }
+        )
+        return len(self.entries)
+
+
 def test_round_robin_cli_preview_prints_episode_preview() -> None:
     output = StringIO()
     logger = FakeScriptRunLogger()
+    success_notifier = FakeNotifier()
+    failure_notifier = FakeNotifier()
 
     exit_code = run(
         ["preview", "Frieren", "Apothecary Diaries", "--preview-count", "2"],
         client_factory=FakeCliPlexClient,
         output=output,
         script_run_logger=logger,
+        success_notifier=success_notifier,
+        failure_notifier=failure_notifier,
     )
 
     assert exit_code == 0
@@ -115,28 +146,41 @@ def test_round_robin_cli_preview_prints_episode_preview() -> None:
             },
         }
     ]
+    assert success_notifier.entries[0]["title"] == "Round Robin Complete"
+    assert success_notifier.entries[0]["metadata"] == {
+        "playlist_name": None,
+        "selected_shows": ["Frieren", "The Apothecary Diaries"],
+        "episode_count": 3,
+        "dry_run": True,
+    }
+    assert failure_notifier.entries == []
 
 
 def test_round_robin_cli_keys_prints_only_rating_keys() -> None:
     output = StringIO()
     logger = FakeScriptRunLogger()
+    success_notifier = FakeNotifier()
 
     exit_code = run(
         ["keys", "Frieren", "Apothecary Diaries"],
         client_factory=FakeCliPlexClient,
         output=output,
         script_run_logger=logger,
+        success_notifier=success_notifier,
+        failure_notifier=FakeNotifier(),
     )
 
     assert exit_code == 0
     assert output.getvalue() == "a1,b1,a2\n"
     assert logger.entries[0]["status"] == "success"
     assert logger.entries[0]["metadata"]["dry_run"] is True
+    assert success_notifier.entries[0]["metadata"]["dry_run"] is True
 
 
 def test_round_robin_cli_create_creates_playlist_and_prints_preview() -> None:
     output = StringIO()
     logger = FakeScriptRunLogger()
+    success_notifier = FakeNotifier()
     clients: list[FakeCliPlexClient] = []
 
     def client_factory() -> FakeCliPlexClient:
@@ -155,6 +199,8 @@ def test_round_robin_cli_create_creates_playlist_and_prints_preview() -> None:
         client_factory=client_factory,
         output=output,
         script_run_logger=logger,
+        success_notifier=success_notifier,
+        failure_notifier=FakeNotifier(),
     )
 
     assert exit_code == 0
@@ -179,11 +225,35 @@ def test_round_robin_cli_create_creates_playlist_and_prints_preview() -> None:
             },
         }
     ]
+    assert success_notifier.entries == [
+        {
+            "message": (
+                "Round robin playlist 'Anime Round Robin' completed "
+                "with 3 episodes."
+            ),
+            "metadata": {
+                "playlist_name": "Anime Round Robin",
+                "selected_shows": ["Frieren", "The Apothecary Diaries"],
+                "episode_count": 3,
+                "dry_run": False,
+            },
+            "title": "Round Robin Complete",
+            "description": "Anime Round Robin",
+            "color": 0x2ECC71,
+            "fields": [
+                {"name": "Playlist", "value": "Anime Round Robin", "inline": True},
+                {"name": "Episodes", "value": 3, "inline": True},
+                {"name": "Dry Run", "value": False, "inline": True},
+                {"name": "Shows", "value": "Frieren, The Apothecary Diaries"},
+            ],
+        }
+    ]
 
 
 def test_round_robin_cli_logs_failure() -> None:
     output = StringIO()
     logger = FakeScriptRunLogger()
+    failure_notifier = FakeNotifier()
 
     try:
         run(
@@ -191,6 +261,8 @@ def test_round_robin_cli_logs_failure() -> None:
             client_factory=FakeCliPlexClient,
             output=output,
             script_run_logger=logger,
+            success_notifier=FakeNotifier(),
+            failure_notifier=failure_notifier,
         )
     except SystemExit as exc:
         assert exc.code == 1
@@ -211,3 +283,8 @@ def test_round_robin_cli_logs_failure() -> None:
             },
         }
     ]
+    assert failure_notifier.entries[0]["title"] == "Round Robin Failed"
+    assert failure_notifier.entries[0]["metadata"] == {
+        "playlist_name": "Anime Round Robin",
+        "selected_shows": ["Missing Show"],
+    }

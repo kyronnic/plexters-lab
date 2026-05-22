@@ -117,6 +117,14 @@ Every execution logs a row to `script_runs` through `plexter.db.log_script_run`.
 - Successful runs include playlist name, selected shows, episode count, and dry-run status.
 - Failed runs include the error message, selected show queries, and playlist name when available.
 
+### Notifications
+
+Round Robin sends Discord notifications through `plexter.notifications`.
+
+- Successful runs call `notify_success()` with a Discord embed.
+- Failed runs call `notify_failure()` with a Discord embed.
+- Notification delivery is best-effort: a Discord problem prints a warning but does not undo a successful Plex playlist creation.
+
 ### Missing Show Errors
 
 If Plex cannot find a title, the command exits with a clean error:
