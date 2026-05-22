@@ -1,7 +1,10 @@
 from plexter.discord_bot.commands import (
     format_libraries,
+    format_recent_activity,
     format_show_search_results,
+    format_system_status,
 )
+from plexter.services.health import PlexHealth, ServiceCheck, SystemStatus
 
 
 def test_format_libraries_lists_titles_and_types() -> None:
@@ -29,3 +32,43 @@ def test_format_show_search_results_lists_top_shows() -> None:
 
 def test_format_show_search_results_handles_empty_list() -> None:
     assert format_show_search_results("missing", []) == "No shows found for 'missing'."
+
+
+def test_format_system_status_is_concise() -> None:
+    status = SystemStatus(
+        atlas_online=True,
+        plex=PlexHealth(
+            name="Plex",
+            connected=True,
+            message="Connected",
+            library_count=4,
+        ),
+        postgres=ServiceCheck(
+            name="Postgres",
+            connected=False,
+            message="postgres unavailable",
+        ),
+    )
+
+    assert format_system_status(status) == (
+        "Atlas: Online\n"
+        "Plex: Connected\n"
+        "Postgres: Failed\n"
+        "Libraries: 4"
+    )
+
+
+def test_format_recent_activity_shows_latest_items() -> None:
+    assert format_recent_activity(
+        [
+            {"summary": "round_robin - success - Created playlist"},
+            {"summary": "success - sent - Discord sent"},
+        ]
+    ) == (
+        "- round_robin - success - Created playlist\n"
+        "- success - sent - Discord sent"
+    )
+
+
+def test_format_recent_activity_handles_empty_list() -> None:
+    assert format_recent_activity([]) == "No recent Plexter activity."

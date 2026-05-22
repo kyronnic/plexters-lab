@@ -139,6 +139,8 @@ uv run python -m plexter.discord_bot
 Current commands:
 
 - `/ping`
+- `/status`
+- `/recent`
 - `/libraries`
 - `/search query:<str>`
 

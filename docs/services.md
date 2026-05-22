@@ -13,6 +13,8 @@ Atlas Bot provides Discord slash commands for Plexter.
 Current commands:
 
 - `/ping`: confirms the bot is online.
+- `/status`: shows Atlas, Plex, Postgres, and Plex library status.
+- `/recent`: shows the latest Plexter script and notification activity.
 - `/libraries`: lists Plex libraries.
 - `/search query:<str>`: searches Plex shows and returns the top results.
 
@@ -49,31 +51,31 @@ PLEX_TOKEN=your-classic-plex-token
 Check service status:
 
 ```bash
-systemctl status atlas-bot
+systemctl status atlas.service
 ```
 
 Follow logs:
 
 ```bash
-journalctl -u atlas-bot -f
+journalctl -u atlas.service -f
 ```
 
 Restart the bot:
 
 ```bash
-sudo systemctl restart atlas-bot
+sudo systemctl restart atlas.service
 ```
 
 Stop the bot:
 
 ```bash
-sudo systemctl stop atlas-bot
+sudo systemctl stop atlas.service
 ```
 
 Start the bot:
 
 ```bash
-sudo systemctl start atlas-bot
+sudo systemctl start atlas.service
 ```
 
 ### Notes

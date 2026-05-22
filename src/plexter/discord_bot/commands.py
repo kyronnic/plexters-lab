@@ -7,6 +7,8 @@ import discord
 from discord import app_commands
 
 from plexter.plex.client import PlexClient
+from plexter.services.activity import get_recent_activity
+from plexter.services.health import SystemStatus, get_system_status
 
 
 MAX_SEARCH_RESULTS = 5
@@ -62,6 +64,26 @@ def register_commands(
 
         await interaction.response.send_message(message)
 
+    @tree.command(
+        name="status",
+        description="Show Plexter system status.",
+        guild=guild,
+    )
+    async def status(interaction: discord.Interaction) -> None:
+        await interaction.response.send_message(
+            format_system_status(get_system_status())
+        )
+
+    @tree.command(
+        name="recent",
+        description="Show recent Plexter activity.",
+        guild=guild,
+    )
+    async def recent(interaction: discord.Interaction) -> None:
+        await interaction.response.send_message(
+            format_recent_activity(get_recent_activity(limit=5))
+        )
+
 
 def format_libraries(libraries: Sequence[dict[str, Any]]) -> str:
     if not libraries:
@@ -87,6 +109,32 @@ def format_show_search_results(
     lines = [
         f"- {show.get('title', 'Untitled')}"
         for show in shows[:MAX_SEARCH_RESULTS]
+    ]
+
+    return "\n".join(lines)
+
+
+def format_system_status(status: SystemStatus) -> str:
+    plex_status = "Connected" if status.plex.connected else "Failed"
+    postgres_status = "Connected" if status.postgres.connected else "Failed"
+
+    return "\n".join(
+        [
+            "Atlas: Online",
+            f"Plex: {plex_status}",
+            f"Postgres: {postgres_status}",
+            f"Libraries: {status.library_count}",
+        ]
+    )
+
+
+def format_recent_activity(activities: Sequence[dict[str, Any]]) -> str:
+    if not activities:
+        return "No recent Plexter activity."
+
+    lines = [
+        f"- {activity.get('summary', 'Activity recorded')}"
+        for activity in activities[:5]
     ]
 
     return "\n".join(lines)
