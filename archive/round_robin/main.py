@@ -4,14 +4,14 @@ from fastapi import FastAPI, Form, Request
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 
-from round_robin.interleave import interleave_episode_lists
-from round_robin.plex_ops import (
+from archive.round_robin.interleave import interleave_episode_lists
+from archive.round_robin.plex_ops import (
     get_tv_sections,
     search_shows,
     fetch_show_episodes,
     format_episode_line
 )
-from round_robin.playlist_ops import create_video_playlist
+from archive.round_robin.playlist_ops import create_video_playlist
 
 app = FastAPI()
 templates = Jinja2Templates(directory="src/round_robin/templates")

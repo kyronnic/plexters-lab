@@ -5,7 +5,7 @@ import httpx
 from typing import Dict
 from dotenv import load_dotenv
 
-from plexlib.plex_jwt_auth import get_plex_token, _base_headers
+from archive.plexlib.plex_jwt_auth import get_plex_token, _base_headers
 
 load_dotenv()
 

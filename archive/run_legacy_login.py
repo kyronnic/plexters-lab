@@ -1,4 +1,4 @@
-from plexter.legacy_auth import create_pin, build_auth_url, poll_pin
+from archive.legacy_auth import create_pin, build_auth_url, poll_pin
 from plexlib.plex_jwt_auth import PLEX_CLIENT_ID
 
 def main():
