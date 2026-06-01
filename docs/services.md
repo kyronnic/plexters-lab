@@ -30,7 +30,13 @@ The bot does not use the Discord message content intent. Commands are registered
 
 ### Required Environment
 
-The service expects Plexter configuration from `.env` through `plexter.config`.
+The service expects Plexter configuration through `plexter.config`. Bitwarden Secrets Manager is read first when `BWS_ACCESS_TOKEN` and `PLEXTER_BWS_ORGANIZATION_ID` are available, then `.env` is used as a fallback.
+
+For systemd, load the server-local BWS bootstrap file before starting the app:
+
+```env
+EnvironmentFile=/etc/plexter/bws.env
+```
 
 Required bot settings:
 
@@ -80,7 +86,7 @@ sudo systemctl start atlas.service
 
 ### Notes
 
-- The service should be restarted after changes to bot code or `.env`.
+- The service should be restarted after changes to bot code, BWS bootstrap config, or `.env` fallback values.
 - Guild-scoped slash command sync happens during bot startup.
 - The bot code lives in `src/plexter/discord_bot/`.
 - The app entry point lives in `src/plexter/discord_bot/__main__.py`.

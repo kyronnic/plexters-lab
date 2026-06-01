@@ -56,9 +56,9 @@ Implemented:
 
 plexter.config
 
-Environment variables loaded successfully from:
+BWS-backed settings with `.env` fallback loaded successfully from:
 
-.env
+plexter.config
 
 ---
 

@@ -6,7 +6,7 @@ Infrastructure lives outside this repository in `~/plexstack`. This repository i
 
 ## Current Capabilities
 
-- Load configuration from `.env` through `plexter.config`.
+- Load configuration from Bitwarden Secrets Manager or `.env` through `plexter.config`.
 - Connect to PostgreSQL through `plexter.db`.
 - Log notification events through `plexter.notifications`.
 - Connect to Plex with classic `X-Plex-Token` authentication.
@@ -21,7 +21,8 @@ Infrastructure lives outside this repository in `~/plexstack`. This repository i
 ```text
 src/
     plexter/
-        config.py              # .env-backed application settings
+        config.py              # BWS-first application settings with .env fallback
+        secrets.py             # Bitwarden Secrets Manager integration
         db.py                  # PostgreSQL connection and script run logging
         notifications.py       # Notification logging and Discord webhook entry point
         discord_bot/           # Discord slash-command bot skeleton
@@ -58,13 +59,56 @@ docs/
 - `uv` for dependency and virtual environment management.
 - Plex server reachable from this machine.
 - PostgreSQL for persistent application state.
-- A `.env` file with the required settings.
+- Bitwarden Secrets Manager access, or a `.env` file with the required settings.
 
 The project was initialized with `uv`. Run commands through `uv run ...` from the repository root.
 
 ## Configuration
 
-Configuration is loaded from `.env` by `plexter.config`.
+Configuration is loaded by `plexter.config`. If Bitwarden Secrets Manager is available, Plexter reads BWS first and falls back to environment variables loaded from `.env`.
+
+Runtime settings can live in BWS as key/value secrets:
+
+```text
+PLEX_BASE_URL
+PLEX_TOKEN
+POSTGRES_HOST
+POSTGRES_PORT
+POSTGRES_DB
+POSTGRES_USER
+POSTGRES_PASSWORD
+DISCORD_WEBHOOK_URL
+DISCORD_BOT_TOKEN
+DISCORD_GUILD_ID
+```
+
+The BWS machine account token should stay outside this repository. On the server, keep it in a restricted file such as `/etc/plexter/bws.env`:
+
+```env
+BWS_ACCESS_TOKEN=your-machine-account-token
+PLEXTER_BWS_ORGANIZATION_ID=your-bws-organization-id
+PLEXTER_BWS_PROJECT_ID=your-bws-project-id
+```
+
+Load that file before running Plexter commands:
+
+```bash
+set -a
+source /etc/plexter/bws.env
+set +a
+```
+
+Plexter uses the native Bitwarden SDK and requires both `BWS_ACCESS_TOKEN` and `PLEXTER_BWS_ORGANIZATION_ID` to read BWS. The organization ID is not a secret, but storing it next to the machine token keeps service startup simple. `PLEXTER_BWS_PROJECT_ID` is optional if the machine account only has access to the relevant secrets, but setting it keeps lookups scoped to the Plexter project. To disable BWS and use only environment variables, set:
+
+```env
+PLEXTER_CONFIG_BACKEND=env
+```
+
+To require BWS and raise on SDK failures or incomplete BWS bootstrap configuration, set:
+
+```env
+PLEXTER_BWS_STRICT=true
+```
 
 Required for Plex features:
 
