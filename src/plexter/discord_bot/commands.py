@@ -9,6 +9,7 @@ from discord import app_commands
 from plexter.plex.client import PlexClient
 from plexter.services.activity import get_recent_activity
 from plexter.services.health import SystemStatus, get_system_status
+from plexter.services.torrents import get_stalled_torrents, format_stalled_torrents_message
 
 
 MAX_SEARCH_RESULTS = 5
@@ -83,6 +84,27 @@ def register_commands(
         await interaction.response.send_message(
             format_recent_activity(get_recent_activity(limit=5))
         )
+
+    @tree.command(
+        name="stalled",
+        description="Show stalled or inactive torrents from qBittorrent.",
+        guild=guild,
+    )
+    @app_commands.describe(
+        hours="Hours threshold for inactivity (default: 48)",
+    )
+    async def stalled(
+        interaction: discord.Interaction,
+        hours: int | None = None,
+    ) -> None:
+        try:
+            threshold_hours = hours or 48
+            torrents = get_stalled_torrents(hours_inactive=threshold_hours)
+            message = format_stalled_torrents_message(torrents)
+        except Exception as exc:
+            message = f"Failed to fetch stalled torrents: {exc}"
+
+        await interaction.response.send_message(message)
 
 
 def format_libraries(libraries: Sequence[dict[str, Any]]) -> str:

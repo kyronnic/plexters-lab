@@ -41,6 +41,12 @@ def test_load_settings_accepts_bws_values_for_all_runtime_config(monkeypatch) ->
             "DISCORD_WEBHOOK_URL": "https://discord.test/webhook",
             "DISCORD_BOT_TOKEN": "bot-token",
             "DISCORD_GUILD_ID": "12345",
+            "QBIT_BASE_URL": "http://qbit.test:8080",
+            "QBIT_USER": "qbit-user",
+            "QBIT_PASSWORD": "qbit-password",
+            "PROWLARR_API_KEY": "prowlarr-key",
+            "RADARR_MAIN_API_KEY": "radarr-main-key",
+            "SONARR_KIDS_API_KEY": "sonarr-kids-key",
         }
     )
 
@@ -56,6 +62,17 @@ def test_load_settings_accepts_bws_values_for_all_runtime_config(monkeypatch) ->
     assert settings.discord_webhook_url == "https://discord.test/webhook"
     assert settings.discord_bot_token == "bot-token"
     assert settings.discord_guild_id == 12345
+    assert settings.qbit_base_url == "http://qbit.test:8080"
+    assert settings.qbit_user == "qbit-user"
+    assert settings.qbit_password == "qbit-password"
+    assert settings.prowlarr_base_url == "http://localhost:9696"
+    assert settings.prowlarr_api_key == "prowlarr-key"
+    assert settings.radarr_instances[0].name == "main"
+    assert settings.radarr_instances[0].base_url == "http://localhost:7878"
+    assert settings.radarr_instances[0].api_key == "radarr-main-key"
+    assert settings.sonarr_instances[2].name == "kids"
+    assert settings.sonarr_instances[2].base_url == "http://localhost:8991"
+    assert settings.sonarr_instances[2].api_key == "sonarr-kids-key"
 
 
 def test_load_settings_leaves_values_empty_when_config_missing(monkeypatch) -> None:
@@ -70,6 +87,13 @@ def test_load_settings_leaves_values_empty_when_config_missing(monkeypatch) -> N
         "DISCORD_WEBHOOK_URL",
         "DISCORD_BOT_TOKEN",
         "DISCORD_GUILD_ID",
+        "QBIT_BASE_URL",
+        "QBIT_USER",
+        "QBIT_PASSWORD",
+        "PROWLARR_BASE_URL",
+        "PROWLARR_API_KEY",
+        "RADARR_MAIN_API_KEY",
+        "SONARR_KIDS_API_KEY",
     ):
         monkeypatch.delenv(name, raising=False)
 
@@ -85,3 +109,12 @@ def test_load_settings_leaves_values_empty_when_config_missing(monkeypatch) -> N
     assert settings.discord_webhook_url == ""
     assert settings.discord_bot_token == ""
     assert settings.discord_guild_id is None
+    assert settings.qbit_base_url == ""
+    assert settings.qbit_user == ""
+    assert settings.qbit_password == ""
+    assert settings.prowlarr_base_url == "http://localhost:9696"
+    assert settings.prowlarr_api_key == ""
+    assert settings.radarr_instances[0].base_url == "http://localhost:7878"
+    assert settings.radarr_instances[0].api_key == ""
+    assert settings.sonarr_instances[2].base_url == "http://localhost:8991"
+    assert settings.sonarr_instances[2].api_key == ""

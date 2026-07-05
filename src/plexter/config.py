@@ -45,6 +45,22 @@ def optional_int_config(
     return optional_int_value(config_value(name, provider=provider))
 
 
+def url_config(
+    name: str,
+    default: str,
+    *,
+    provider: SecretProvider | None = None,
+) -> str:
+    return config_value(name, provider=provider).strip() or default
+
+
+@dataclass(frozen=True)
+class ArrInstanceSettings:
+    name: str
+    base_url: str
+    api_key: str
+
+
 @dataclass(frozen=True)
 class Settings:
     postgres_host: str
@@ -59,6 +75,35 @@ class Settings:
     discord_webhook_url: str
     discord_bot_token: str
     discord_guild_id: int | None
+
+    qbit_base_url: str
+    qbit_user: str
+    qbit_password: str
+
+    prowlarr_base_url: str
+    prowlarr_api_key: str
+    radarr_instances: tuple[ArrInstanceSettings, ...]
+    sonarr_instances: tuple[ArrInstanceSettings, ...]
+
+
+def arr_instances(
+    prefix: str,
+    defaults: dict[str, str],
+    *,
+    provider: SecretProvider | None = None,
+) -> tuple[ArrInstanceSettings, ...]:
+    instances: list[ArrInstanceSettings] = []
+    for name, default_url in defaults.items():
+        key_name = f"{prefix}_{name.upper()}_API_KEY"
+        base_url_name = f"{prefix}_{name.upper()}_BASE_URL"
+        instances.append(
+            ArrInstanceSettings(
+                name=name,
+                base_url=url_config(base_url_name, default_url, provider=provider),
+                api_key=config_value(key_name, provider=provider),
+            )
+        )
+    return tuple(instances)
 
 
 def load_settings(provider: SecretProvider | None = None) -> Settings:
@@ -77,6 +122,35 @@ def load_settings(provider: SecretProvider | None = None) -> Settings:
         discord_bot_token=config_value("DISCORD_BOT_TOKEN", provider=provider),
         discord_guild_id=optional_int_value(
             config_value("DISCORD_GUILD_ID", provider=provider)
+        ),
+        qbit_base_url=config_value("QBIT_BASE_URL", provider=provider),
+        qbit_user=config_value("QBIT_USER", provider=provider),
+        qbit_password=config_value("QBIT_PASSWORD", provider=provider),
+        prowlarr_base_url=url_config(
+            "PROWLARR_BASE_URL",
+            "http://localhost:9696",
+            provider=provider,
+        ),
+        prowlarr_api_key=config_value("PROWLARR_API_KEY", provider=provider),
+        radarr_instances=arr_instances(
+            "RADARR",
+            {
+                "main": "http://localhost:7878",
+                "bry": "http://localhost:7879",
+                "kids": "http://localhost:7880",
+                "requests": "http://localhost:7881",
+            },
+            provider=provider,
+        ),
+        sonarr_instances=arr_instances(
+            "SONARR",
+            {
+                "main": "http://localhost:8989",
+                "bry": "http://localhost:8990",
+                "kids": "http://localhost:8991",
+                "requests": "http://localhost:8992",
+            },
+            provider=provider,
         ),
     )
 
