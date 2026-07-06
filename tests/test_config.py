@@ -47,6 +47,7 @@ def test_load_settings_accepts_bws_values_for_all_runtime_config(monkeypatch) ->
             "PROWLARR_API_KEY": "prowlarr-key",
             "RADARR_MAIN_API_KEY": "radarr-main-key",
             "SONARR_KIDS_API_KEY": "sonarr-kids-key",
+            "YOUTUBE_LIBRARY_ROOT": "/media/youtube",
         }
     )
 
@@ -73,6 +74,7 @@ def test_load_settings_accepts_bws_values_for_all_runtime_config(monkeypatch) ->
     assert settings.sonarr_instances[2].name == "kids"
     assert settings.sonarr_instances[2].base_url == "http://localhost:8991"
     assert settings.sonarr_instances[2].api_key == "sonarr-kids-key"
+    assert settings.youtube_library_root == "/media/youtube"
 
 
 def test_load_settings_leaves_values_empty_when_config_missing(monkeypatch) -> None:
@@ -94,6 +96,7 @@ def test_load_settings_leaves_values_empty_when_config_missing(monkeypatch) -> N
         "PROWLARR_API_KEY",
         "RADARR_MAIN_API_KEY",
         "SONARR_KIDS_API_KEY",
+        "YOUTUBE_LIBRARY_ROOT",
     ):
         monkeypatch.delenv(name, raising=False)
 
@@ -118,3 +121,4 @@ def test_load_settings_leaves_values_empty_when_config_missing(monkeypatch) -> N
     assert settings.radarr_instances[0].api_key == ""
     assert settings.sonarr_instances[2].base_url == "http://localhost:8991"
     assert settings.sonarr_instances[2].api_key == ""
+    assert settings.youtube_library_root == "/mnt/media/Library/YouTube"

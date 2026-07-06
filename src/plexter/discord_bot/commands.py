@@ -1,15 +1,25 @@
 from __future__ import annotations
 
 from collections.abc import Sequence
+import asyncio
 from typing import Any
 
 import discord
 from discord import app_commands
 
 from plexter.plex.client import PlexClient
+from plexter.config import settings
 from plexter.services.activity import get_recent_activity
 from plexter.services.health import SystemStatus, get_system_status
 from plexter.services.torrents import get_stalled_torrents, format_stalled_torrents_message
+from plexter.services.youtube_downloads import (
+    DownloadResult,
+    InvalidYouTubeUrlError,
+    YouTubeDownloadConfigError,
+    YouTubeDownloadError,
+    build_download_request,
+    download_youtube,
+)
 
 
 MAX_SEARCH_RESULTS = 5
@@ -106,6 +116,60 @@ def register_commands(
 
         await interaction.response.send_message(message)
 
+    @tree.command(
+        name="youtube-download",
+        description="Download a YouTube video or playlist into the Plex YouTube libraries.",
+        guild=guild,
+    )
+    @app_commands.describe(
+        url="YouTube video or playlist URL.",
+        title="Optional title override for standalone videos.",
+        download_type="Optional override; inferred from the URL when omitted.",
+        series="Optional series name override for TV/playlist downloads.",
+        season="Season number for TV/playlist downloads (default: 1).",
+    )
+    @app_commands.rename(download_type="type")
+    @app_commands.choices(
+        download_type=[
+            app_commands.Choice(name="Movie", value="movie"),
+            app_commands.Choice(name="TV", value="tv"),
+        ]
+    )
+    async def youtube_download(
+        interaction: discord.Interaction,
+        url: str,
+        title: str | None = None,
+        download_type: str | None = None,
+        series: str | None = None,
+        season: int | None = None,
+    ) -> None:
+        try:
+            request = build_download_request(
+                url=url,
+                library_root=settings.youtube_library_root,
+                requested_type=download_type,
+                title=title,
+                series=series,
+                season=season,
+            )
+        except InvalidYouTubeUrlError as exc:
+            await interaction.response.send_message(format_youtube_download_error(exc))
+            return
+        except (ValueError, YouTubeDownloadConfigError) as exc:
+            await interaction.response.send_message(format_youtube_download_error(exc))
+            return
+
+        await interaction.response.defer(thinking=True)
+        await interaction.followup.send(format_youtube_download_queued(request.download_type))
+
+        try:
+            result = await asyncio.to_thread(download_youtube, request)
+        except YouTubeDownloadError as exc:
+            await interaction.followup.send(format_youtube_download_error(exc))
+            return
+
+        await interaction.followup.send(format_youtube_download_success(result))
+
 
 def format_libraries(libraries: Sequence[dict[str, Any]]) -> str:
     if not libraries:
@@ -160,3 +224,17 @@ def format_recent_activity(activities: Sequence[dict[str, Any]]) -> str:
     ]
 
     return "\n".join(lines)
+
+
+def format_youtube_download_queued(download_type: str) -> str:
+    library = "YouTube TV" if download_type == "tv" else "YouTube Movies"
+    return f"Queued YouTube download for {library}."
+
+
+def format_youtube_download_success(result: DownloadResult) -> str:
+    library = "YouTube TV" if result.download_type == "tv" else "YouTube Movies"
+    return f"Downloaded to {library}: {result.destination}"
+
+
+def format_youtube_download_error(exc: Exception) -> str:
+    return f"YouTube download failed: {exc}"

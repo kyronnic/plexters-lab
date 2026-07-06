@@ -84,6 +84,7 @@ class Settings:
     prowlarr_api_key: str
     radarr_instances: tuple[ArrInstanceSettings, ...]
     sonarr_instances: tuple[ArrInstanceSettings, ...]
+    youtube_library_root: str
 
 
 def arr_instances(
@@ -152,6 +153,11 @@ def load_settings(provider: SecretProvider | None = None) -> Settings:
             },
             provider=provider,
         ),
+        youtube_library_root=config_value(
+            "YOUTUBE_LIBRARY_ROOT",
+            provider=provider,
+        ).strip()
+        or "/mnt/media/Library/YouTube",
     )
 
 

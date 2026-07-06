@@ -17,6 +17,7 @@ Current commands:
 - `/recent`: shows the latest Plexter script and notification activity.
 - `/libraries`: lists Plex libraries.
 - `/search query:<str>`: searches Plex shows and returns the top results.
+- `/youtube-download url:<str>`: downloads a YouTube video or playlist into the YouTube Plex libraries.
 
 ### Runtime Entry Point
 
@@ -51,6 +52,23 @@ The `/libraries` and `/search` commands also require:
 PLEX_BASE_URL=http://your-plex-host:32400
 PLEX_TOKEN=your-classic-plex-token
 ```
+
+YouTube downloads use `yt-dlp` and default to this library root:
+
+```env
+YOUTUBE_LIBRARY_ROOT=/mnt/media/Library/YouTube
+```
+
+The command infers the destination from the URL. Single videos go to
+`$YOUTUBE_LIBRARY_ROOT/Movies`; playlist URLs go to
+`$YOUTUBE_LIBRARY_ROOT/TV/<Series>/Season NN`. Create the Plex libraries
+manually:
+
+- `YouTube Movies` pointed at `/media/Library/YouTube/Movies`
+- `YouTube TV` pointed at `/media/Library/YouTube/TV`
+
+Run production bot commands through the `plexstack/scripts/bws-run.sh` wrapper so
+BWS-backed settings are available to the process.
 
 ### Systemd Operations
 

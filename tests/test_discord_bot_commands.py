@@ -1,10 +1,16 @@
+from pathlib import Path
+
 from plexter.discord_bot.commands import (
     format_libraries,
     format_recent_activity,
     format_show_search_results,
     format_system_status,
+    format_youtube_download_error,
+    format_youtube_download_queued,
+    format_youtube_download_success,
 )
 from plexter.services.health import PlexHealth, ServiceCheck, SystemStatus
+from plexter.services.youtube_downloads import DownloadResult
 
 
 def test_format_libraries_lists_titles_and_types() -> None:
@@ -72,3 +78,30 @@ def test_format_recent_activity_shows_latest_items() -> None:
 
 def test_format_recent_activity_handles_empty_list() -> None:
     assert format_recent_activity([]) == "No recent Plexter activity."
+
+
+def test_format_youtube_download_queued_uses_inferred_library() -> None:
+    assert format_youtube_download_queued("movie") == (
+        "Queued YouTube download for YouTube Movies."
+    )
+    assert format_youtube_download_queued("tv") == (
+        "Queued YouTube download for YouTube TV."
+    )
+
+
+def test_format_youtube_download_success_includes_destination() -> None:
+    result = DownloadResult(
+        download_type="movie",
+        destination=Path("/mnt/media/Library/YouTube/Movies"),
+        display_name="Movies",
+    )
+
+    assert format_youtube_download_success(result) == (
+        "Downloaded to YouTube Movies: /mnt/media/Library/YouTube/Movies"
+    )
+
+
+def test_format_youtube_download_error_is_concise() -> None:
+    assert format_youtube_download_error(ValueError("bad url")) == (
+        "YouTube download failed: bad url"
+    )
